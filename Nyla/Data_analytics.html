@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Order Analytics</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f4f6f8;
+      padding: 40px;
+    }
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 600px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      margin-bottom: 12px;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:disabled {
+      background: #9ca3af;
+    }
+    pre {
+      background: #111827;
+      color: #e5e7eb;
+      padding: 15px;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="card">
+  <h3>Database Connection</h3>
+
+  <input id="host" placeholder="Host (e.g. localhost)">
+  <input id="port" placeholder="Port (3306)">
+  <input id="user" placeholder="User">
+  <input id="password" type="password" placeholder="Password">
+  <input id="schema" placeholder="Schema / Database">
+
+  <button onclick="connect()">Connect</button>
+  <p id="status"></p>
+</div>
+
+<div class="card" id="analysis" style="display:none">
+  <h3>Analytics</h3>
+
+  <select id="table"></select>
+  <button onclick="analyze()">Run Analysis</button>
+
+  <pre id="output"></pre>
+</div>
+
+<script>
+let dbCfg = null;
+
+function connect() {
+  dbCfg = {
+    host: host.value,
+    port: Number(port.value),
+    user: user.value,
+    password: password.value,
+    schema: schema.value
+  };
+
+  fetch("http://localhost:8000/connect", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(dbCfg)
+  })
+  .then(r => r.json())
+  .then(res => {
+    if (res.status === "success") {
+      status.textContent = "Connected successfully";
+      loadTables();
+    } else {
+      status.textContent = res.message;
+    }
+  });
+}
+
+function loadTables() {
+  fetch("http://localhost:8000/tables", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(dbCfg)
+  })
+  .then(r => r.json())
+  .then(tables => {
+    table.innerHTML = "";
+    tables.forEach(t => {
+      const opt = document.createElement("option");
+      opt.value = t;
+      opt.textContent = t;
+      table.appendChild(opt);
+    });
+    analysis.style.display = "block";
+  });
+}
+
+function analyze() {
+  fetch("http://localhost:8000/analyze", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      db: dbCfg,
+      table: table.value
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    output.textContent = JSON.stringify(data, null, 2);
+  });
+}
+</script>
+
+</body>
+</html>
