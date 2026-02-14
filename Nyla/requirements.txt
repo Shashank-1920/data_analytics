@@ -1,5 +1,0 @@
-# MySQL connector for Python
-mysql-connector-python
-
-# Data manipulation library
-pandas
